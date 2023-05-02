@@ -3,7 +3,7 @@ spec:
   name: "cloudformation-template-summary"
   registry: "grpc"
   path: "localhost:7777"
-  version: "v0.0.1"
+  version: "v0.0.2"
   tables: 
     ["*"]
   destinations:

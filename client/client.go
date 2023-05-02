@@ -29,7 +29,7 @@ func New(ctx context.Context, logger zerolog.Logger, s specs.Source, opts source
 		return nil, fmt.Errorf("failed to unmarshal plugin spec: %w", err)
 	}
 
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithSharedConfigProfile("deployTools"), config.WithRegion("eu-west-1"))
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("eu-west-1"))
 	if err != nil {
 		return nil, err
 	}
