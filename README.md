@@ -7,7 +7,6 @@ A cloudformation-template-summary source plugin for CloudQuery that loads data f
 
 ## Running this project
 ```
-go build
 go run main.go serve
 ```
 
