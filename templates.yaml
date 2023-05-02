@@ -1,0 +1,20 @@
+kind: source
+spec:
+  name: "cloudformation-template-summary"
+  registry: "grpc"
+  path: "localhost:7777"
+  version: "v1.0.0"
+  tables: 
+    ["*"]
+  destinations:
+    - "file"
+---
+kind: destination
+spec:
+  name: file
+  path: cloudquery/file
+  version: "v3.0.2"
+  write_mode: "append"
+  spec:
+    path: "template-output.json"
+    format: "json"
