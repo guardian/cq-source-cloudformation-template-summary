@@ -5,6 +5,18 @@
 
 A cloudformation-template-summary source plugin for CloudQuery that loads data from cloudformation-template-summary to any database, data warehouse or data lake supported by [CloudQuery](https://www.cloudquery.io/), such as PostgreSQL, BigQuery, Athena, and many more.
 
+## Running this project
+```
+go build
+go run main.go serve
+```
+
+Then, once you have cloudquery installed (`brew install cloudquery/tap/cloudquery`), and the correct Janus credentials,
+
+```
+cloudquery sync templates.yaml
+```
+
 ## Links
 
  - [CloudQuery Quickstart Guide](https://www.cloudquery.io/docs/quickstart)
