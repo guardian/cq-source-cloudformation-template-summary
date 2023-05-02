@@ -3,7 +3,7 @@ spec:
   name: "cloudformation-template-summary"
   registry: "grpc"
   path: "localhost:7777"
-  version: "v1.0.0"
+  version: "v0.0.1"
   tables: 
     ["*"]
   destinations:
@@ -16,5 +16,5 @@ spec:
   version: "v3.0.2"
   write_mode: "append"
   spec:
-    path: "template-output.json"
+    path: "template-output"
     format: "json"
