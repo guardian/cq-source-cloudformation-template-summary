@@ -16,7 +16,7 @@ func Plugin() *source.Plugin {
 		"guardian-cloudformation-template-summary",
 		Version,
 		schema.Tables{
-			resources.SampleTable(),
+			resources.TemplateSummaries(),
 		},
 		client.New,
 	)
