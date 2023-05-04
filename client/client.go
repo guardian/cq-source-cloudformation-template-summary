@@ -127,12 +127,14 @@ func clientsForOrganisationUnits(ctx context.Context, org *AwsOrg, regions []str
 			RoleSessionName: aws.String("cloudquery"),
 		})
 		if err != nil {
-			return nil, fmt.Errorf("unable to assume cloudquery role in account '%s': %w", *account.Id, err)
+			log.Printf("unable to assume cloudquery role in account '%s': %v", *account.Id, err)
+			continue
 		}
 
 		cfg, err := config.LoadDefaultConfig(ctx, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(*creds.Credentials.AccessKeyId, *creds.Credentials.SecretAccessKey, *creds.Credentials.SessionToken)))
 		if err != nil {
-			return nil, fmt.Errorf("unable to load AWS config from assumed credentials for account '%s': %w", *account.Id, err)
+			log.Printf("unable to load AWS config from assumed credentials for account '%s': %v", *account.Id, err)
+			continue
 		}
 
 		if clients[*account.Id] == nil {
