@@ -108,6 +108,11 @@ func clientsForOrganisationUnits(ctx context.Context, org *AwsOrg, regions []str
 	}
 
 	for _, account := range accounts {
+		if account.Status == types.AccountStatusSuspended {
+			log.Printf("ignoring account %s as suspended", *account.Id)
+			continue
+		}
+
 		roleARN := arn.ARN{
 			Partition: "aws",
 			Service:   "iam",
@@ -122,12 +127,12 @@ func clientsForOrganisationUnits(ctx context.Context, org *AwsOrg, regions []str
 			RoleSessionName: aws.String("cloudquery"),
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unable to assume cloudquery role in account '%s': %w", *account.Id, err)
 		}
 
 		cfg, err := config.LoadDefaultConfig(ctx, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(*creds.Credentials.AccessKeyId, *creds.Credentials.SecretAccessKey, *creds.Credentials.SessionToken)))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unable to load AWS config from assumed credentials for account '%s': %w", *account.Id, err)
 		}
 
 		if clients[*account.Id] == nil {
