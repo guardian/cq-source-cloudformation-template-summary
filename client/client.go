@@ -95,7 +95,7 @@ func clientsForAccounts(ctx context.Context, accounts []Account, regions []strin
 func clientsForOrganisationUnits(ctx context.Context, org *AwsOrg, regions []string) (ClientsAccountRegionMap, error) {
 	clients := ClientsAccountRegionMap{}
 
-	topLevelConfig, err := config.LoadDefaultConfig(ctx)
+	topLevelConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-1"))
 	if err != nil {
 		return nil, err
 	}
