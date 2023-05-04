@@ -1,6 +1,10 @@
 package client
 
-import "github.com/cloudquery/plugin-sdk/schema"
+import (
+	"log"
+
+	"github.com/cloudquery/plugin-sdk/schema"
+)
 
 func ServiceAccountRegionMultiplexer(table, service string) func(meta schema.ClientMeta) []schema.ClientMeta {
 	return func(meta schema.ClientMeta) []schema.ClientMeta {
@@ -19,6 +23,8 @@ func ServiceAccountRegionMultiplexer(table, service string) func(meta schema.Cli
 				l = append(l, &c)
 			}
 		}
+
+		log.Printf("multiplexed clients are: %v", l)
 
 		return l
 	}

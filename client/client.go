@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -33,6 +34,8 @@ func (c *Client) ID() string {
 }
 
 func New(ctx context.Context, logger zerolog.Logger, s specs.Source, opts source.Options) (schema.ClientMeta, error) {
+	log.Println("creating the client!")
+
 	var pluginSpec Spec
 
 	if err := s.UnmarshalSpec(&pluginSpec); err != nil {
@@ -74,6 +77,10 @@ func clientsForAccounts(ctx context.Context, accounts []Account, regions []strin
 			return nil, err
 		}
 
+		if clients[account.ID] == nil {
+			clients[account.ID] = map[string]*cloudformation.Client{}
+		}
+
 		for _, region := range regions {
 			clients[account.ID][region] = cloudformation.NewFromConfig(cfg, func(o *cloudformation.Options) { o.Region = region })
 		}
@@ -98,6 +105,10 @@ func clientsForOrganisationUnits(ctx context.Context, org *AwsOrg, regions []str
 	}
 
 	for _, account := range accounts {
+		if clients[*account.Id] == nil {
+			clients[*account.Id] = map[string]*cloudformation.Client{}
+		}
+
 		for _, region := range regions {
 			clients[*account.Id][region] = cloudformation.NewFromConfig(cfg, func(o *cloudformation.Options) { o.Region = region })
 		}

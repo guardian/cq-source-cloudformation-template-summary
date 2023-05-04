@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"log"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
@@ -28,6 +29,8 @@ func TemplateSummaries() *schema.Table {
 
 // fetchTemplateSummaries fetches a list of template summaries from the CloudFormation API
 func fetchTemplateSummaries(ctx context.Context, meta schema.ClientMeta, parent *schema.Resource, res chan<- interface{}) error {
+	log.Println("fetching template summaries...")
+
 	c := meta.(*client.Client)
 	cfnClient := c.CloudformationClient()
 
@@ -38,13 +41,16 @@ func fetchTemplateSummaries(ctx context.Context, meta schema.ClientMeta, parent 
 
 	for _, stack := range stacks.StackSummaries {
 		stackName := stack.StackName
+
 		input := &cloudformation.GetTemplateSummaryInput{StackName: stackName}
 		summary, err := cfnClient.GetTemplateSummary(ctx, input)
 		if err != nil {
 			if strings.Contains(err.Error(), "does not exist") {
 				continue
 			}
-			return err
+
+			log.Printf("unable to get template summary for stack %s: %v", *stackName, err)
+			continue
 		}
 
 		table := &TemplateSummary{
