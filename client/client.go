@@ -6,10 +6,13 @@ import (
 	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/arn"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/cloudquery/plugin-sdk/plugins/source"
 	"github.com/cloudquery/plugin-sdk/schema"
 	"github.com/cloudquery/plugin-sdk/specs"
@@ -92,12 +95,12 @@ func clientsForAccounts(ctx context.Context, accounts []Account, regions []strin
 func clientsForOrganisationUnits(ctx context.Context, org *AwsOrg, regions []string) (ClientsAccountRegionMap, error) {
 	clients := ClientsAccountRegionMap{}
 
-	cfg, err := config.LoadDefaultConfig(ctx)
+	topLevelConfig, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	orgClient := organizations.NewFromConfig(cfg)
+	orgClient := organizations.NewFromConfig(topLevelConfig)
 
 	accounts, err := getOUAccounts(ctx, orgClient, org)
 	if err != nil {
@@ -105,6 +108,28 @@ func clientsForOrganisationUnits(ctx context.Context, org *AwsOrg, regions []str
 	}
 
 	for _, account := range accounts {
+		roleARN := arn.ARN{
+			Partition: "aws",
+			Service:   "iam",
+			Region:    "",
+			AccountID: *account.Id,
+			Resource:  "role/" + org.ChildAccountRoleName,
+		}.String()
+
+		//assume a role in each account
+		creds, err := sts.NewFromConfig(topLevelConfig).AssumeRole(ctx, &sts.AssumeRoleInput{
+			RoleArn:         aws.String(roleARN),
+			RoleSessionName: aws.String("cloudquery"),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		cfg, err := config.LoadDefaultConfig(ctx, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(*creds.Credentials.AccessKeyId, *creds.Credentials.SecretAccessKey, *creds.Credentials.SessionToken)))
+		if err != nil {
+			return nil, err
+		}
+
 		if clients[*account.Id] == nil {
 			clients[*account.Id] = map[string]*cloudformation.Client{}
 		}
