@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"log"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
@@ -10,34 +11,54 @@ import (
 	"github.com/guardian/cq-source-cloudformation-template-summary/client"
 )
 
-func SampleTable() *schema.Table {
+type TemplateSummary struct {
+	Metadata  *string
+	StackName *string
+	StackId   *string
+}
+
+func TemplateSummaries() *schema.Table {
+	tableName := "cloudformation_template_summaries"
 	return &schema.Table{
-		Name:      "cloudformation_template_summary_sample_table",
+		Name:      tableName,
 		Resolver:  fetchTemplateSummaries,
-		Transform: transformers.TransformWithStruct(&cloudformation.GetTemplateSummaryOutput{}),
+		Transform: transformers.TransformWithStruct(&TemplateSummary{}),
+		Multiplex: client.ServiceAccountRegionMultiplexer(tableName, "cloudformation"),
 	}
 }
 
-// returns template summaries for all stacks in the account
+// fetchTemplateSummaries fetches a list of template summaries from the CloudFormation API
 func fetchTemplateSummaries(ctx context.Context, meta schema.ClientMeta, parent *schema.Resource, res chan<- interface{}) error {
-	c := meta.(*client.Client)
-	stacks, err := c.CfnClient.ListStacks(ctx, &cloudformation.ListStacksInput{})
+	log.Println("fetching template summaries...")
 
+	c := meta.(*client.Client)
+	cfnClient := c.CloudformationClient()
+
+	stacks, err := cfnClient.ListStacks(ctx, &cloudformation.ListStacksInput{})
 	if err != nil {
 		return err
 	}
 
 	for _, stack := range stacks.StackSummaries {
 		stackName := stack.StackName
+
 		input := &cloudformation.GetTemplateSummaryInput{StackName: stackName}
-		summary, err := c.CfnClient.GetTemplateSummary(ctx, input)
+		summary, err := cfnClient.GetTemplateSummary(ctx, input)
 		if err != nil {
 			if strings.Contains(err.Error(), "does not exist") {
 				continue
 			}
-			return err
+
+			log.Printf("unable to get template summary for stack %s: %v", *stackName, err)
+			continue
 		}
-		res <- summary
+
+		table := &TemplateSummary{
+			Metadata:  summary.Metadata,
+			StackName: stack.StackName,
+			StackId:   stack.StackId,
+		}
+		res <- table
 	}
 	return nil
 }
