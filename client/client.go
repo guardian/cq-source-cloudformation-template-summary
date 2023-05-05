@@ -95,12 +95,12 @@ func clientsForAccounts(ctx context.Context, accounts []Account, regions []strin
 func clientsForOrganisationUnits(ctx context.Context, org *AwsOrg, regions []string) (ClientsAccountRegionMap, error) {
 	clients := ClientsAccountRegionMap{}
 
-	topLevelConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-1"))
+	awsConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-1"))
 	if err != nil {
 		return nil, err
 	}
 
-	orgClient := organizations.NewFromConfig(topLevelConfig)
+	orgClient := organizations.NewFromConfig(awsConfig)
 
 	accounts, err := getOUAccounts(ctx, orgClient, org)
 	if err != nil {
@@ -122,7 +122,7 @@ func clientsForOrganisationUnits(ctx context.Context, org *AwsOrg, regions []str
 		}.String()
 
 		//assume a role in each account
-		creds, err := sts.NewFromConfig(topLevelConfig).AssumeRole(ctx, &sts.AssumeRoleInput{
+		creds, err := sts.NewFromConfig(awsConfig).AssumeRole(ctx, &sts.AssumeRoleInput{
 			RoleArn:         aws.String(roleARN),
 			RoleSessionName: aws.String("cloudquery"),
 		})
@@ -131,7 +131,7 @@ func clientsForOrganisationUnits(ctx context.Context, org *AwsOrg, regions []str
 			continue
 		}
 
-		cfg, err := config.LoadDefaultConfig(ctx, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(*creds.Credentials.AccessKeyId, *creds.Credentials.SecretAccessKey, *creds.Credentials.SessionToken)))
+		awsStaticCredsConfig, err := config.LoadDefaultConfig(ctx, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(*creds.Credentials.AccessKeyId, *creds.Credentials.SecretAccessKey, *creds.Credentials.SessionToken)))
 		if err != nil {
 			log.Printf("unable to load AWS config from assumed credentials for account '%s': %v", *account.Id, err)
 			continue
@@ -142,7 +142,7 @@ func clientsForOrganisationUnits(ctx context.Context, org *AwsOrg, regions []str
 		}
 
 		for _, region := range regions {
-			clients[*account.Id][region] = cloudformation.NewFromConfig(cfg, func(o *cloudformation.Options) { o.Region = region })
+			clients[*account.Id][region] = cloudformation.NewFromConfig(awsStaticCredsConfig, func(o *cloudformation.Options) { o.Region = region })
 		}
 	}
 
